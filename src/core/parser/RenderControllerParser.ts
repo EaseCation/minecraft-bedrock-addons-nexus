@@ -1,4 +1,5 @@
 import { AddonFileRenderController, FileType } from '../types';
+import * as fs from 'fs';
 
 export async function parseRenderController(path: string, content: any): Promise<AddonFileRenderController | null> {
     try {
@@ -13,13 +14,15 @@ export async function parseRenderController(path: string, content: any): Promise
         const textures: string[] = [];
         const materials: string[] = [];
 
+        const stat = await fs.promises.stat(path);
         return {
             path,
             type: FileType.RENDER_CONTROLLER,
             controllers,
             geometries,
             textures,
-            materials
+            materials,
+            updatedAt: stat.mtimeMs
         };
     } catch (error) {
         console.error('RenderControllerParser: 解析渲染控制器文件时出错:', error);

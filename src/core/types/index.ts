@@ -17,6 +17,7 @@ export type AddonFile = AddonFileServerBlock | AddonFileClientBlock | AddonFileS
 export interface AddonFileBase {
     path: string;
     type: FileType;
+    updatedAt: number;
 }
 
 export interface AddonFileServerBlock extends AddonFileBase {

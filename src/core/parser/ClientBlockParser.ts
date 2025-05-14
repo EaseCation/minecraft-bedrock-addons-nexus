@@ -1,5 +1,6 @@
 import { AddonFile, AddonFileClientBlock, FileType } from '../types';
 import * as path from 'path';
+import * as fs from 'fs';
 
 interface BlockDefinition {
     textures: string;
@@ -35,10 +36,12 @@ export async function parseClientBlock(filePath: string, content: any): Promise<
             return null;
         }
 
+        const stat = await fs.promises.stat(filePath);
         return {
             type: FileType.CLIENT_BLOCK,
             path: filePath,
-            blocks: blocks
+            blocks: blocks,
+            updatedAt: stat.mtimeMs
         };
     } catch (error) {
         console.error(`Error parsing client block file ${filePath}:`, error);

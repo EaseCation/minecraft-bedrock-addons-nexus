@@ -1,4 +1,5 @@
 import { AddonFileModel, FileType } from '../types';
+import * as fs from 'fs';
 
 export async function parseModel(path: string, content: any): Promise<AddonFileModel | null> {
     try {
@@ -16,10 +17,12 @@ export async function parseModel(path: string, content: any): Promise<AddonFileM
             return null;
         }
 
+        const stat = await fs.promises.stat(path);
         return {
             path,
             type: FileType.MODEL,
-            geometries
+            geometries,
+            updatedAt: stat.mtimeMs
         };
     } catch (error) {
         console.error('ModelParser: 解析模型文件时出错:', error);

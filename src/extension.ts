@@ -2,7 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import { FileIndexManager } from './core/indexer/FileIndexManager';
-import { RelatedFilesView } from './ui/views/RelatedFilesView';
+import { RelatedFilesView, StructureView } from './ui/views/RelatedFilesView';
 import { RelatedFilesController } from './ui/controller/RelatedFilesController';
 
 // This method is called when your extension is activated
@@ -20,6 +20,13 @@ export async function activate(context: vscode.ExtensionContext) {
 	});
 	context.subscriptions.push(treeView);
 
+	// 创建完整结构视图
+	const structureView = new StructureView();
+	const structureTreeView = vscode.window.createTreeView('structureView', {
+		treeDataProvider: structureView
+	});
+	context.subscriptions.push(structureTreeView);
+
 	// 创建相关文件控制器
 	const relatedFilesController = new RelatedFilesController(relatedFilesView, fileIndexManager);
 	context.subscriptions.push(relatedFilesController);
@@ -33,6 +40,8 @@ export async function activate(context: vscode.ExtensionContext) {
 		
 		// 初始化完成后，刷新当前文件
 		await relatedFilesController.refreshCurrentFile();
+		// 同步索引到完整结构树
+		structureView.updateAddonStructure(fileIndexManager.getAddonStructure());
 	} finally {
 		// 清除加载提示
 		loadingMessage.dispose();
@@ -44,6 +53,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		try {
 			await fileIndexManager.initialize();
 			await relatedFilesController.refreshCurrentFile();
+			structureView.updateAddonStructure(fileIndexManager.getAddonStructure());
 		} finally {
 			loadingMessage.dispose();
 		}

@@ -39,6 +39,10 @@
         {
           "id": "relatedFilesView",
           "name": "相关文件"
+        },
+        {
+          "id": "structureView",
+          "name": "结构视图"
         }
       ]
     },

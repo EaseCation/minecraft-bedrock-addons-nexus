@@ -245,7 +245,8 @@ export class RelatedFilesView implements vscode.TreeDataProvider<RelatedFileItem
     }
 }
 
-class RelatedFileItem extends vscode.TreeItem {
+// 通用树节点，便于复用
+class BaseFileItem extends vscode.TreeItem {
     constructor(
         public readonly label: string,
         public readonly type: FileType,
@@ -255,25 +256,16 @@ class RelatedFileItem extends vscode.TreeItem {
         public readonly contextValue?: string
     ) {
         super(label, collapsibleState);
-
         this.iconPath = FileTypeIcon.getIcon(type);
-        
-        // 如果是分组节点（有 items）
         if (items) {
             this.tooltip = '';
-        } 
-        // 如果是文件节点（有 file）
-        else if (file) {
-            this.tooltip = file.path ? 
-                path.relative(vscode.workspace.rootPath || '', file.path) : 
-                '文件未找到';
+        } else if (file) {
+            this.tooltip = file.path ? path.relative(vscode.workspace.rootPath || '', file.path) : '文件未找到';
         } else {
             this.tooltip = '文件未找到';
         }
-
         this.description = file ? (file.path ? '' : '(文件未找到)') : undefined;
         this.contextValue = contextValue || (file ? 'file' : 'group');
-
         if (file) {
             this.command = {
                 command: 'vscode.open',
@@ -288,5 +280,76 @@ class RelatedFileItem extends vscode.TreeItem {
             };
             this.iconPath = new vscode.ThemeIcon('add');
         }
+    }
+}
+
+// RelatedFileItem 继承 BaseFileItem，兼容原有逻辑
+class RelatedFileItem extends BaseFileItem {}
+
+// 新增完整结构树 StructureView
+export class StructureView implements vscode.TreeDataProvider<BaseFileItem> {
+    private _onDidChangeTreeData: vscode.EventEmitter<BaseFileItem | undefined | null | void> = new vscode.EventEmitter<BaseFileItem | undefined | null | void>();
+    readonly onDidChangeTreeData: vscode.Event<BaseFileItem | undefined | null | void> = this._onDidChangeTreeData.event;
+    private _addonStructure: AddonStructure | null = null;
+
+    constructor() {}
+
+    public updateAddonStructure(structure: AddonStructure) {
+        this._addonStructure = structure;
+        this._onDidChangeTreeData.fire();
+    }
+
+    getTreeItem(element: BaseFileItem): vscode.TreeItem {
+        return element;
+    }
+
+    getChildren(element?: BaseFileItem): BaseFileItem[] {
+        if (!this._addonStructure) return [];
+        if (!element) {
+            // 根节点，显示所有类型分组
+            return this.getAllTypeGroups();
+        } else if (element.items) {
+            // 分组下的文件节点
+            return element.items
+                .filter(item => item.file)
+                .sort((a, b) => (b.file!.updatedAt || 0) - (a.file!.updatedAt || 0))
+                .map(item => new BaseFileItem(
+                    item.identifier,
+                    element.type,
+                    vscode.TreeItemCollapsibleState.None,
+                    item.file
+                ));
+        }
+        return [];
+    }
+
+    private getAllTypeGroups(): BaseFileItem[] {
+        if (!this._addonStructure) return [];
+        const index = this._addonStructure.index;
+        const groups: { type: FileType; label: string; items: { identifier: string; file?: AddonFile }[] }[] = [
+            { type: FileType.SERVER_BLOCK, label: FileTypeLabel.getLabel(FileType.SERVER_BLOCK), items: this.makeItems(index.serverBlock) },
+            { type: FileType.CLIENT_BLOCK, label: FileTypeLabel.getLabel(FileType.CLIENT_BLOCK), items: this.makeItems(index.clientBlock) },
+            { type: FileType.SERVER_ENTITY, label: FileTypeLabel.getLabel(FileType.SERVER_ENTITY), items: this.makeItems(index.serverEntity) },
+            { type: FileType.CLIENT_ENTITY, label: FileTypeLabel.getLabel(FileType.CLIENT_ENTITY), items: this.makeItems(index.clientEntity) },
+            { type: FileType.ANIMATION, label: FileTypeLabel.getLabel(FileType.ANIMATION), items: this.makeItems(index.animation) },
+            { type: FileType.MODEL, label: FileTypeLabel.getLabel(FileType.MODEL), items: this.makeItems(index.model) },
+            { type: FileType.TEXTURE, label: FileTypeLabel.getLabel(FileType.TEXTURE), items: this.makeItems(index.texture) },
+            { type: FileType.PARTICLE, label: FileTypeLabel.getLabel(FileType.PARTICLE), items: this.makeItems(index.particle) },
+            { type: FileType.SOUND, label: FileTypeLabel.getLabel(FileType.SOUND), items: this.makeItems(index.sound) },
+            { type: FileType.RENDER_CONTROLLER, label: FileTypeLabel.getLabel(FileType.RENDER_CONTROLLER), items: this.makeItems(index.renderController) },
+        ];
+        return groups.map(g => new BaseFileItem(
+            g.label,
+            g.type,
+            vscode.TreeItemCollapsibleState.Expanded,
+            undefined,
+            g.items
+        ));
+    }
+
+    private makeItems<T extends AddonFile>(dict: { [id: string]: T }): { identifier: string; file?: AddonFile }[] {
+        return Object.entries(dict)
+            .map(([identifier, file]) => ({ identifier, file }))
+            .sort((a, b) => (b.file?.updatedAt || 0) - (a.file?.updatedAt || 0));
     }
 } 

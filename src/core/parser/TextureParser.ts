@@ -1,5 +1,6 @@
 import { AddonFileTexture, FileType } from '../types';
 import * as path from 'path';
+import * as fs from 'fs';
 
 export async function parseTexture(filePath: string, content: any): Promise<AddonFileTexture | null> {
     try {
@@ -19,10 +20,12 @@ export async function parseTexture(filePath: string, content: any): Promise<Addo
         // 移除文件扩展名
         const texture = relativePath.substring(0, relativePath.lastIndexOf('.'));
 
+        const stat = await fs.promises.stat(filePath);
         return {
             path: filePath,
             type: FileType.TEXTURE,
-            texture
+            texture,
+            updatedAt: stat.mtimeMs
         };
     } catch (error) {
         console.error('TextureParser: 解析纹理文件时出错:', error);

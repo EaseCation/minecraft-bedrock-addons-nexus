@@ -1,4 +1,5 @@
 import { AddonFileSound, FileType } from '../types';
+import * as fs from 'fs';
 
 export async function parseSound(path: string, content: any): Promise<AddonFileSound | null> {
     try {
@@ -22,10 +23,12 @@ export async function parseSound(path: string, content: any): Promise<AddonFileS
             return null;
         }
 
+        const stat = await fs.promises.stat(path);
         return {
             path,
             type: FileType.SOUND,
-            sounds
+            sounds,
+            updatedAt: stat.mtimeMs
         };
     } catch (error) {
         console.error('SoundParser: 解析音效文件时出错:', error);

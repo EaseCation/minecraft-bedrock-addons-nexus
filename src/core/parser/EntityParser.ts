@@ -1,4 +1,5 @@
 import { AddonFileServerEntity, AddonFileClientEntity, FileType } from '../types';
+import * as fs from 'fs';
 
 export async function parseServerEntity(path: string, content: any): Promise<AddonFileServerEntity | null> {
     try {
@@ -6,10 +7,12 @@ export async function parseServerEntity(path: string, content: any): Promise<Add
         if (!identifier) {
             return null;
         }
+        const stat = await fs.promises.stat(path);
         return {
             path,
             type: FileType.SERVER_ENTITY,
-            entity: identifier
+            entity: identifier,
+            updatedAt: stat.mtimeMs
         };
     } catch (error) {
         console.error('EntityParser: 解析服务端实体文件时出错:', error);
@@ -62,6 +65,7 @@ export async function parseClientEntity(path: string, content: any): Promise<Add
             renderControllers.push(...description.render_controllers);
         }
 
+        const stat = await fs.promises.stat(path);
         return {
             path,
             type: FileType.CLIENT_ENTITY,
@@ -71,7 +75,8 @@ export async function parseClientEntity(path: string, content: any): Promise<Add
             textures,
             particles,
             sounds,
-            renderControllers
+            renderControllers,
+            updatedAt: stat.mtimeMs
         };
     } catch (error) {
         console.error('EntityParser: 解析客户端实体文件时出错:', error);

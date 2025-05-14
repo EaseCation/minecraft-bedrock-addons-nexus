@@ -1,4 +1,5 @@
 import { AddonFileParticle, FileType } from '../types';
+import * as fs from 'fs';
 
 export async function parseParticle(path: string, content: any): Promise<AddonFileParticle | null> {
     try {
@@ -21,11 +22,13 @@ export async function parseParticle(path: string, content: any): Promise<AddonFi
             return null;
         }
 
+        const stat = await fs.promises.stat(path);
         return {
             path,
             type: FileType.PARTICLE,
             particles,
-            textures
+            textures,
+            updatedAt: stat.mtimeMs
         };
     } catch (error) {
         console.error('ParticleParser: 解析粒子文件时出错:', error);
