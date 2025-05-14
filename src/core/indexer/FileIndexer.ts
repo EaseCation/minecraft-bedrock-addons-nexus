@@ -280,9 +280,19 @@ export class FileIndexer {
     }
 
     private async indexWorkspaceFolder(folder: vscode.WorkspaceFolder): Promise<void> {
-        // 查找资源包和行为包
-        const resourcePacks = await this.findPacks(folder, 'resource_pack');
-        const behaviorPacks = await this.findPacks(folder, 'behavior_pack');
+        // 递归查找所有 manifest.json
+        const manifestPaths = await this.findAllManifests(folder.uri.fsPath);
+        const resourcePacks: string[] = [];
+        const behaviorPacks: string[] = [];
+
+        for (const manifestPath of manifestPaths) {
+            const packType = await this.parseManifestType(manifestPath);
+            if (packType === 'resource') {
+                resourcePacks.push(path.dirname(manifestPath));
+            } else if (packType === 'behavior') {
+                behaviorPacks.push(path.dirname(manifestPath));
+            }
+        }
 
         this.addonStructure.resourcePacks.push(...resourcePacks);
         this.addonStructure.behaviorPacks.push(...behaviorPacks);
@@ -291,12 +301,49 @@ export class FileIndexer {
         console.log('[DEBUG] 找到的行为包：', behaviorPacks);
     }
 
-    private async findPacks(folder: vscode.WorkspaceFolder, packType: string): Promise<string[]> {
-        const pattern = `**/${packType}/**/manifest.json`;
-        const files = await vscode.workspace.findFiles(
-            new vscode.RelativePattern(folder, pattern)
-        );
-        return files.map(file => path.dirname(file.fsPath));
+    // 递归查找所有 manifest.json 文件
+    private async findAllManifests(rootDir: string): Promise<string[]> {
+        const manifests: string[] = [];
+        const fs = require('fs').promises;
+        const pathModule = require('path');
+
+        async function walk(dir: string) {
+            let entries: any[];
+            try {
+                entries = await fs.readdir(dir, { withFileTypes: true });
+            } catch (e) {
+                return;
+            }
+            for (const entry of entries) {
+                const fullPath = pathModule.join(dir, entry.name);
+                if (entry.isDirectory()) {
+                    await walk(fullPath);
+                } else if (entry.isFile() && entry.name === 'manifest.json') {
+                    manifests.push(fullPath);
+                }
+            }
+        }
+        await walk(rootDir);
+        return manifests;
+    }
+
+    // 解析 manifest.json 判断类型
+    private async parseManifestType(manifestPath: string): Promise<'resource' | 'behavior' | null> {
+        try {
+            const content = await this.readFileContent(manifestPath);
+            if (content && content.modules && Array.isArray(content.modules)) {
+                for (const mod of content.modules) {
+                    if (mod.type === 'resources') {
+                        return 'resource';
+                    } else if (mod.type === 'data') {
+                        return 'behavior';
+                    }
+                }
+            }
+        } catch (e) {
+            // 忽略解析错误
+        }
+        return null;
     }
 
     private clearIndex() {
