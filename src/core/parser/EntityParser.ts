@@ -62,7 +62,17 @@ export async function parseClientEntity(path: string, content: any): Promise<Add
 
         // 解析渲染控制器
         if (description.render_controllers) {
-            renderControllers.push(...description.render_controllers);
+            if (Array.isArray(description.render_controllers)) {
+                for (const item of description.render_controllers) {
+                    if (typeof item === 'string') {
+                        renderControllers.push(item);
+                    } else if (typeof item === 'object' && item !== null) {
+                        renderControllers.push(...Object.keys(item));
+                    }
+                }
+            } else if (typeof description.render_controllers === 'string') {
+                renderControllers.push(description.render_controllers);
+            }
         }
 
         const stat = await fs.promises.stat(path);

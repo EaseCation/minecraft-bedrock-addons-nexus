@@ -18,15 +18,16 @@
     "commands": [
       {
         "command": "minecraft-bedrock-addons-nexus.refresh",
-        "title": "Refresh Addons Index"
-      },
-      {
-        "command": "minecraft-bedrock-addons-nexus.helloWorld",
-        "title": "Hello World"
+        "title": "刷新基岩版Addons索引"
       },
       {
         "command": "minecraft-bedrock-addons-nexus.toggleShowRecentOnly",
         "title": "切换仅展示最近"
+      },
+      {
+        "command": "minecraft-bedrock-addons-nexus.addFile",
+        "title": "添加",
+        "icon": "$(add)"
       }
     ],
     "viewsContainers": {
@@ -42,25 +43,23 @@
       "minecraft-bedrock-addons-nexus": [
         {
           "id": "relatedFilesView",
-          "name": "相关文件"
+          "name": "此文件关联"
         },
         {
           "id": "structureView",
-          "name": "结构视图"
+          "name": "项目完整结构"
         }
       ]
     },
-    "colors": [
-      {
-        "id": "relatedFiles.missingFile",
-        "description": "找不到的关联文件的颜色",
-        "defaults": {
-          "dark": "#ff0000",
-          "light": "#ff0000",
-          "highContrast": "#ff0000"
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "minecraft-bedrock-addons-nexus.addFile",
+          "when": "view == relatedFilesView && viewItem == group",
+          "group": "inline"
         }
-      }
-    ]
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

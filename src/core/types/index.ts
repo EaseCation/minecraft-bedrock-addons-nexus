@@ -1,14 +1,20 @@
 export enum FileType {
+    MANIFEST = 'manifest',
     SERVER_BLOCK = 'server_block',
     CLIENT_BLOCK = 'client_block',
     SERVER_ENTITY = 'server_entity',
     CLIENT_ENTITY = 'client_entity',
+    ITEM = 'item',
+    UI = 'ui',
+    ATTACHABLE = 'attachable',
     ANIMATION = 'animation',
+    ANIMATION_CONTROLLER = 'animation_controller',
     MODEL = 'model',
     TEXTURE = 'texture',
     PARTICLE = 'particle',
     SOUND = 'sound',
     RENDER_CONTROLLER = 'render_controller',
+    FOG = 'fog',
     UNKNOWN = 'unknown'
 }
 
@@ -85,34 +91,34 @@ export interface AddonStructure {
     behaviorPacks: string[];
     index: {
         serverBlock: {
-            [blockIdentifier: string]: AddonFileServerBlock;
+            [blockIdentifier: string]: AddonFileServerBlock[];
         };
         clientBlock: {
-            [blockIdentifier: string]: AddonFileClientBlock;
+            [blockIdentifier: string]: AddonFileClientBlock[];
         };
         serverEntity: {
-            [entityIdentifier: string]: AddonFileServerEntity;
+            [entityIdentifier: string]: AddonFileServerEntity[];
         };
         clientEntity: {
-            [entityIdentifier: string]: AddonFileClientEntity;
+            [entityIdentifier: string]: AddonFileClientEntity[];
         };
         animation: {
-            [animationIdentifier: string]: AddonFileAnimation;
+            [animationIdentifier: string]: AddonFileAnimation[];
         };
         model: {
-            [modelIdentifier: string]: AddonFileModel;
+            [modelIdentifier: string]: AddonFileModel[];
         };
         texture: {
-            [textureIdentifier: string]: AddonFileTexture;
+            [textureIdentifier: string]: AddonFileTexture[];
         };
         particle: {
-            [particleIdentifier: string]: AddonFileParticle;
+            [particleIdentifier: string]: AddonFileParticle[];
         };
         sound: {
-            [soundIdentifier: string]: AddonFileSound;
+            [soundIdentifier: string]: AddonFileSound[];
         };
         renderController: {
-            [controllerIdentifier: string]: AddonFileRenderController;
+            [controllerIdentifier: string]: AddonFileRenderController[];
         };
     }
 }

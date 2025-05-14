@@ -6,20 +6,10 @@ import * as path from 'path';
 export class FileWatcher {
     private fileIndexer: FileIndexer;
     private disposables: vscode.Disposable[] = [];
-    private fileTypePatterns: Map<FileType, string[]>;
     private onIndexChanged?: () => void;
 
     constructor(fileIndexer: FileIndexer) {
         this.fileIndexer = fileIndexer;
-        this.fileTypePatterns = new Map([
-            [FileType.SERVER_ENTITY, ['**/entity/**/*.json', '**/entities/**/*.json']],
-            [FileType.CLIENT_ENTITY, ['**/entity/**/*.json', '**/entities/**/*.json']],
-            [FileType.ANIMATION, ['**/animations/**/*.json']],
-            [FileType.MODEL, ['**/models/**/*.json']],
-            [FileType.TEXTURE, ['**/textures/**/*.{png,tga}']],
-            [FileType.PARTICLE, ['**/particles/**/*.json']],
-            [FileType.SOUND, ['**/sounds/**/*.json']]
-        ]);
     }
 
     public setOnIndexChanged(callback: () => void) {
@@ -30,57 +20,50 @@ export class FileWatcher {
         // 清除现有的监听器
         this.dispose();
 
-        // 为每个工作区文件夹创建文件监听器
+        // 为每个工作区文件夹创建全局文件监听器
         for (const folder of workspaceFolders) {
-            await this.watchWorkspaceFolder(folder);
-        }
-    }
+            const watcher = vscode.workspace.createFileSystemWatcher(
+                new vscode.RelativePattern(folder, '**/*')
+            );
 
-    private async watchWorkspaceFolder(folder: vscode.WorkspaceFolder): Promise<void> {
-        // 监听所有相关文件类型
-        for (const [fileType, patterns] of this.fileTypePatterns) {
-            for (const pattern of patterns) {
-                const watcher = vscode.workspace.createFileSystemWatcher(
-                    new vscode.RelativePattern(folder, pattern)
-                );
+            watcher.onDidCreate(async (uri) => {
+                await this.handleFileChange(uri.fsPath, 'create');
+            });
 
-                // 处理文件创建
-                watcher.onDidCreate(async (uri) => {
-                    console.log(`[DEBUG] 文件创建: ${uri.fsPath}`);
-                    await this.handleFileChange(uri.fsPath, fileType, 'create');
-                });
+            watcher.onDidChange(async (uri) => {
+                await this.handleFileChange(uri.fsPath, 'change');
+            });
 
-                // 处理文件修改
-                watcher.onDidChange(async (uri) => {
-                    console.log(`[DEBUG] 文件修改: ${uri.fsPath}`);
-                    await this.handleFileChange(uri.fsPath, fileType, 'change');
-                });
+            watcher.onDidDelete(async (uri) => {
+                await this.handleFileChange(uri.fsPath, 'delete');
+            });
 
-                // 处理文件删除
-                watcher.onDidDelete(async (uri) => {
-                    console.log(`[DEBUG] 文件删除: ${uri.fsPath}`);
-                    await this.handleFileChange(uri.fsPath, fileType, 'delete');
-                });
-
-                this.disposables.push(watcher);
-            }
+            this.disposables.push(watcher);
         }
 
         // 监听 manifest.json 文件
-        const manifestWatcher = vscode.workspace.createFileSystemWatcher(
-            new vscode.RelativePattern(folder, '**/manifest.json')
-        );
+        for (const folder of workspaceFolders) {
+            const manifestWatcher = vscode.workspace.createFileSystemWatcher(
+                new vscode.RelativePattern(folder, '**/manifest.json')
+            );
 
-        manifestWatcher.onDidChange(async (uri) => {
-            console.log(`[DEBUG] manifest.json 修改: ${uri.fsPath}`);
-            await this.handleManifestChange(uri);
-        });
+            manifestWatcher.onDidChange(async (uri) => {
+                console.log(`[DEBUG] manifest.json 修改: ${uri.fsPath}`);
+                await this.handleManifestChange(uri);
+            });
 
-        this.disposables.push(manifestWatcher);
+            this.disposables.push(manifestWatcher);
+        }
     }
 
-    private async handleFileChange(filePath: string, fileType: FileType, changeType: 'create' | 'change' | 'delete'): Promise<void> {
+    private async handleFileChange(filePath: string, changeType: 'create' | 'change' | 'delete'): Promise<void> {
         try {
+            // 跳过.git目录下的文件
+            if (filePath.includes(`${path.sep}.git${path.sep}`) || filePath.includes(`${path.sep}.git${path.posix.sep}`) || filePath.endsWith(`${path.sep}.git`) || filePath.endsWith(`${path.posix.sep}.git`)) {
+                return;
+            }
+            const fileType = await this.fileIndexer.getFileType(filePath);
+            if (!fileType || fileType === FileType.UNKNOWN) return;
             switch (changeType) {
                 case 'create':
                 case 'change':

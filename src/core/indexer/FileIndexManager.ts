@@ -5,7 +5,7 @@ import { FileWatcher } from '../watcher/FileWatcher';
 
 export class FileIndexManager {
     public fileWatcher: FileWatcher;
-    private fileIndexer: FileIndexer;
+    public fileIndexer: FileIndexer;
     private disposables: vscode.Disposable[] = [];
     private indexUpdateCallbacks: ((structure: AddonStructure) => void)[] = [];
 
@@ -82,7 +82,14 @@ export class FileIndexManager {
             return null;
         }
 
-        return Object.values(structure.index[indexKey]).find((f: AddonFile) => f.path === filePath) || null;
+        // 适配数组结构，查找所有数组中path匹配的文件
+        for (const arr of Object.values(structure.index[indexKey])) {
+            if (Array.isArray(arr)) {
+                const found = arr.find((f: AddonFile) => f.path === filePath);
+                if (found) return found;
+            }
+        }
+        return null;
     }
 
     private getIndexKey(fileType: FileType): keyof AddonStructure['index'] | null {
@@ -110,10 +117,6 @@ export class FileIndexManager {
             default:
                 return null;
         }
-    }
-
-    public async getRelatedFiles(filePath: string): Promise<Map<FileType, any[]>> {
-        return await this.fileIndexer.getRelatedFiles(filePath);
     }
 
     public onIndexUpdate(callback: (structure: AddonStructure) => void): void {

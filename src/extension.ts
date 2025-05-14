@@ -2,7 +2,8 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import { FileIndexManager } from './core/indexer/FileIndexManager';
-import { RelatedFilesView, StructureView } from './ui/views/RelatedFilesView';
+import { RelatedFilesView } from './ui/views/RelatedFilesView';
+import { StructureView } from './ui/views/StructureView';
 import { RelatedFilesController } from './ui/controller/RelatedFilesController';
 
 // This method is called when your extension is activated
@@ -14,7 +15,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	const fileIndexManager = new FileIndexManager();
 
 	// 创建相关文件视图
-	const relatedFilesView = new RelatedFilesView();
+	const relatedFilesView = new RelatedFilesView(fileIndexManager.fileIndexer);
 	const treeView = vscode.window.createTreeView('relatedFilesView', {
 		treeDataProvider: relatedFilesView
 	});

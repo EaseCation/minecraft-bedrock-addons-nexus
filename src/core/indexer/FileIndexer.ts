@@ -10,13 +10,37 @@ import { parseParticle } from '../parser/ParticleParser';
 import { parseSound } from '../parser/SoundParser';
 import { parseRenderController } from '../parser/RenderControllerParser';
 import { parseClientBlock } from '../parser/ClientBlockParser';
+import { getFileTypeMeta } from '../types/FileTypeMeta';
 
 type ParserFunction = (path: string, content: any) => Promise<AddonFile | null>;
-type IndexMap = { [key: string]: AddonFile };
+type IndexMap = { [key: string]: AddonFile[] };
+
+export type FileUsesMap = {
+    [filePath: string]: { [type in FileType]?: { [key: string]: AddonFile[] } }
+};
+export type ResourceUsedByMap = {
+    [type in FileType]?: {
+        [identifier: string]: AddonFile[]
+    }
+};
+
+// 常量：合法的后缀名
+const FILE_EXT_NAMES = [
+    ".json",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".bmp",
+    ".tiff",
+    ".materal"
+]
 
 export class FileIndexer {
     private addonStructure: AddonStructure;
     private onIndexUpdate: (structure: AddonStructure) => void;
+    public fileUsesMap: FileUsesMap = {};
+    public resourceUsedByMap: ResourceUsedByMap = {};
 
     private readonly parserMap: Map<FileType, ParserFunction> = new Map<FileType, ParserFunction>([
         [FileType.SERVER_ENTITY, parseServerEntity as ParserFunction],
@@ -75,7 +99,7 @@ export class FileIndexer {
     private async parseFile(filePath: string, fileType: FileType): Promise<AddonFile | null> {
         const parser = this.parserMap.get(fileType);
         if (!parser) {
-            console.log(`[DEBUG] No parser found for file type: ${fileType}`);
+            //console.debug(`[DEBUG] No parser found for file type: ${fileType}`);
             return null;
         }
         
@@ -96,9 +120,7 @@ export class FileIndexer {
         if (!indexKey) {
             return;
         }
-
         const identifiers: string[] = [];
-
         if (file.type === FileType.SERVER_BLOCK) {
             identifiers.push(...file.block);
         } else if (file.type === FileType.CLIENT_BLOCK) {
@@ -120,9 +142,16 @@ export class FileIndexer {
         } else if (file.type === FileType.RENDER_CONTROLLER) {
             identifiers.push(...file.controllers);
         }
-
         for (const identifier of identifiers) {
-            (this.addonStructure.index[indexKey] as IndexMap)[identifier] = file;
+            const arr = (this.addonStructure.index[indexKey] as IndexMap)[identifier];
+            if (!arr) {
+                (this.addonStructure.index[indexKey] as IndexMap)[identifier] = [file];
+            } else {
+                // 避免重复添加同一文件
+                if (!arr.some(f => f.path === file.path)) {
+                    arr.push(file);
+                }
+            }
         }
     }
 
@@ -133,15 +162,12 @@ export class FileIndexer {
                 console.log(`[DEBUG] Skipping file ${filePath} - unknown type`);
                 return null;
             }
-
-            console.log(`[DEBUG] Indexing file: ${filePath} (Type: ${fileType})`);
-
             const parsedFile = await this.parseFile(filePath, fileType);
             if (parsedFile) {
                 this.updateIndex(parsedFile);
+                this.buildReferenceMaps();
                 this.onIndexUpdate(this.addonStructure);
             }
-
             return parsedFile;
         } catch (error) {
             console.error(`[DEBUG] Error indexing file ${filePath}:`, error);
@@ -157,70 +183,21 @@ export class FileIndexer {
         return this.addonStructure;
     }
 
-    public async getRelatedFiles(filePath: string): Promise<Map<FileType, AddonFile[]>> {
-        const result = new Map<FileType, AddonFile[]>();
-        const fileType = await this.getFileType(filePath);
-        if (!fileType) {
-            return result;
-        }
-
-        if (fileType === FileType.SERVER_ENTITY || fileType === FileType.CLIENT_ENTITY) {
-            const entityFile = fileType === FileType.SERVER_ENTITY 
-                ? Object.values(this.addonStructure.index.serverEntity).find(f => f.path === filePath)
-                : Object.values(this.addonStructure.index.clientEntity).find(f => f.path === filePath);
-
-            if (entityFile && 'animations' in entityFile) {
-                if (entityFile.animations) {
-                    this.addRelatedFiles(result, FileType.ANIMATION, entityFile.animations, 'animation');
-                }
-                if (entityFile.geometries) {
-                    this.addRelatedFiles(result, FileType.MODEL, entityFile.geometries, 'model');
-                }
-                if (entityFile.textures) {
-                    this.addRelatedFiles(result, FileType.TEXTURE, entityFile.textures, 'texture');
-                }
-                if (entityFile.particles) {
-                    this.addRelatedFiles(result, FileType.PARTICLE, entityFile.particles, 'particle');
-                }
-                if (entityFile.sounds) {
-                    this.addRelatedFiles(result, FileType.SOUND, entityFile.sounds, 'sound');
-                }
-            }
-        }
-
-        return result;
-    }
-
-    private addRelatedFiles(
-        result: Map<FileType, AddonFile[]>,
-        fileType: FileType,
-        ids: string[],
-        indexKey: keyof AddonStructure['index']
-    ): void {
-        const files = ids
-            .map(id => this.addonStructure.index[indexKey][id])
-            .filter(Boolean);
-        if (files.length > 0) {
-            result.set(fileType, files);
-        }
-    }
-
-    public updateFile(file: AddonFile): void {
-        this.updateIndex(file);
-        this.onIndexUpdate(this.addonStructure);
-    }
-
     public removeFile(filePath: string, fileType: FileType): void {
         const indexKey = this.indexMap.get(fileType);
         if (!indexKey) return;
-
         const index = this.addonStructure.index[indexKey];
-        Object.entries(index).forEach(([id, file]) => {
-            if (file.path === filePath) {
-                delete index[id];
+        Object.entries(index).forEach(([id, arr]) => {
+            if (Array.isArray(arr)) {
+                const newArr = arr.filter(f => f.path !== filePath);
+                if (newArr.length === 0) {
+                    delete index[id];
+                } else {
+                    index[id] = newArr;
+                }
             }
         });
-
+        this.buildReferenceMaps();
         this.onIndexUpdate(this.addonStructure);
     }
 
@@ -231,12 +208,11 @@ export class FileIndexer {
         // 处理所有包中的文件
         const allPacks = [...this.addonStructure.resourcePacks, ...this.addonStructure.behaviorPacks];
         for (const pack of allPacks) {
-            // 递归查找所有 .json 文件
-            const jsonFiles = await this.findAllJsonFiles(pack);
-            for (const filePath of jsonFiles) {
+            // 递归查找所有文件
+            const allFiles = await this.findAllFiles(pack);
+            for (const filePath of allFiles) {
                 const fileType = await this.getFileType(filePath);
                 if (fileType) {
-                    console.log(`[DEBUG] 处理${fileType}文件: ${filePath}`);
                     const parsedFile = await this.parseFile(filePath, fileType);
                     if (parsedFile) {
                         this.updateIndex(parsedFile);
@@ -244,13 +220,11 @@ export class FileIndexer {
                 }
             }
         }
-
-        console.log('[DEBUG] 所有索引更新完成');
     }
 
-    // 递归查找所有 .json 文件
-    private async findAllJsonFiles(rootDir: string): Promise<string[]> {
-        const jsonFiles: string[] = [];
+    // 递归查找所有合法的文件
+    private async findAllFiles(rootDir: string): Promise<string[]> {
+        const files: string[] = [];
         const fs = require('fs').promises;
         const pathModule = require('path');
 
@@ -265,29 +239,26 @@ export class FileIndexer {
                 const fullPath = pathModule.join(dir, entry.name);
                 if (entry.isDirectory()) {
                     await walk(fullPath);
-                } else if (entry.isFile() && entry.name.endsWith('.json')) {
-                    jsonFiles.push(fullPath);
+                } else if (entry.isFile() && FILE_EXT_NAMES.find(ext => entry.name.endsWith(ext))) {
+                    files.push(fullPath);
                 }
             }
         }
         await walk(rootDir);
-        return jsonFiles;
+        return files;
     }
 
     public async indexWorkspace(workspaceFolders: readonly vscode.WorkspaceFolder[]): Promise<void> {
         // 清除现有索引
         this.addonStructure = this.createEmptyStructure();
-
         // 为每个工作区文件夹创建索引
         for (const folder of workspaceFolders) {
             await this.indexWorkspaceFolder(folder);
         }
-
         // 更新索引
         await this.updateEntityIndex();
+        this.buildReferenceMaps();
         this.onIndexUpdate(this.addonStructure);
-
-        console.log('[DEBUG] 索引完成，当前索引结构：', JSON.stringify(this.addonStructure, null, 2));
     }
 
     private async indexWorkspaceFolder(folder: vscode.WorkspaceFolder): Promise<void> {
@@ -307,9 +278,6 @@ export class FileIndexer {
 
         this.addonStructure.resourcePacks.push(...resourcePacks);
         this.addonStructure.behaviorPacks.push(...behaviorPacks);
-
-        console.log('[DEBUG] 找到的资源包：', resourcePacks);
-        console.log('[DEBUG] 找到的行为包：', behaviorPacks);
     }
 
     // 递归查找所有 manifest.json 文件
@@ -357,14 +325,41 @@ export class FileIndexer {
         return null;
     }
 
-    private clearIndex() {
-        if (!this.addonStructure) {
-            return;
+    public buildReferenceMaps() {
+        this.fileUsesMap = {};
+        this.resourceUsedByMap = {};
+        const structure = this.addonStructure;
+        for (const type of Object.values(FileType)) {
+            const meta = getFileTypeMeta(type);
+            if (!meta?.findUsingOtherFiles) continue;
+            const indexDict = structure.index[meta.indexKey];
+            for (const [identifier, files] of Object.entries(indexDict)) {
+                for (const file of files) {
+                    // 正向：file 用了哪些资源（新结构，直接存）
+                    const uses = meta.findUsingOtherFiles(structure, file);
+                    this.fileUsesMap[file.path] = uses;
+                    // 反向：被哪些文件引用
+                    for (const [usedType, idMap] of Object.entries(uses)) {
+                        for (const [usedId, usedFiles] of Object.entries(idMap)) {
+                            for (const usedFile of usedFiles) {
+                                if (!this.resourceUsedByMap[usedType as FileType]) {
+                                    this.resourceUsedByMap[usedType as FileType] = {};
+                                }
+                                if (!this.resourceUsedByMap[usedType as FileType]![usedId]) {
+                                    this.resourceUsedByMap[usedType as FileType]![usedId] = [];
+                                }
+                                // 避免重复
+                                if (!this.resourceUsedByMap[usedType as FileType]![usedId].some(f => f.path === file.path)) {
+                                    this.resourceUsedByMap[usedType as FileType]![usedId].push(file);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
-
-        // 清空客户端方块索引
-        this.addonStructure.index.clientBlock = {};
-
-        // ... existing code ...
+        console.log('------ buildReferenceMaps -------');
+        console.log(this.fileUsesMap);
+        console.log(this.resourceUsedByMap);
     }
 } 

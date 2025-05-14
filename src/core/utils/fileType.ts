@@ -1,16 +1,30 @@
 import { FileType } from '../types';
 import * as vscode from 'vscode';
-import * as fs from 'fs';
+import * as path from 'path';
 
 export async function determineFileType(filePath: string): Promise<FileType> {
-    // 首先通过路径判断基本类型
+    if (path.basename(filePath) === 'manifest.json' || path.basename(filePath) === 'pack_manifest.json') {
+        return FileType.MANIFEST;
+    }
+    if ((filePath.includes('blocks/') || filePath.includes('netease_blocks/')) && filePath.endsWith('.json')) {
+        return FileType.SERVER_BLOCK;
+    }
+    if (path.basename(filePath) === 'blocks.json') {
+        return FileType.SERVER_BLOCK;
+    }
+    if ((filePath.includes('items/') || filePath.includes('netease_items/')) && filePath.endsWith('.json')) {
+        return FileType.ITEM;
+    }
     if (filePath.includes('animations/') && filePath.endsWith('.json')) {
         return FileType.ANIMATION;
+    }
+    if (filePath.includes('animation_controllers/') && filePath.endsWith('.json')) {
+        return FileType.ANIMATION_CONTROLLER;
     }
     if (filePath.includes('models/') && filePath.endsWith('.json')) {
         return FileType.MODEL;
     }
-    if (filePath.includes('textures/')) {
+    if (filePath.includes('textures/') && ['.png', '.jpg', '.jpeg', '.tga'].includes(path.extname(filePath))) {
         return FileType.TEXTURE;
     }
     if (filePath.includes('particles/') && filePath.endsWith('.json')) {
@@ -22,7 +36,16 @@ export async function determineFileType(filePath: string): Promise<FileType> {
     if (filePath.includes('render_controllers/') && filePath.endsWith('.json')) {
         return FileType.RENDER_CONTROLLER;
     }
-
+    if (filePath.includes('ui/') && filePath.endsWith('.json')) {
+        return FileType.UI;
+    }
+    if (filePath.includes('attachables/') && filePath.endsWith('.json')) {
+        return FileType.ATTACHABLE;
+    }
+    if (filePath.includes('fogs/') && filePath.endsWith('.json')) {
+        return FileType.FOG;
+    }
+    
     // 对于实体文件，需要读取内容来确定类型
     if (filePath.includes('entities/') || filePath.includes('entity/')) {
         try {
