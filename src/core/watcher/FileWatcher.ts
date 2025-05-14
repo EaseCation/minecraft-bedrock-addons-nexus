@@ -7,6 +7,7 @@ export class FileWatcher {
     private fileIndexer: FileIndexer;
     private disposables: vscode.Disposable[] = [];
     private fileTypePatterns: Map<FileType, string[]>;
+    private onIndexChanged?: () => void;
 
     constructor(fileIndexer: FileIndexer) {
         this.fileIndexer = fileIndexer;
@@ -19,6 +20,10 @@ export class FileWatcher {
             [FileType.PARTICLE, ['**/particles/**/*.json']],
             [FileType.SOUND, ['**/sounds/**/*.json']]
         ]);
+    }
+
+    public setOnIndexChanged(callback: () => void) {
+        this.onIndexChanged = callback;
     }
 
     public async watch(workspaceFolders: readonly vscode.WorkspaceFolder[]): Promise<void> {
@@ -85,6 +90,9 @@ export class FileWatcher {
                     this.fileIndexer.removeFile(filePath, fileType);
                     break;
             }
+            if (this.onIndexChanged) {
+                this.onIndexChanged();
+            }
         } catch (error) {
             console.error(`[DEBUG] 处理文件变更失败: ${filePath}`, error);
         }
@@ -103,6 +111,9 @@ export class FileWatcher {
                 if (workspaceFolders) {
                     await this.fileIndexer.indexWorkspace(workspaceFolders);
                 }
+            }
+            if (this.onIndexChanged) {
+                this.onIndexChanged();
             }
         } catch (error) {
             console.error(`[DEBUG] 处理 manifest 变更失败: ${uri.fsPath}`, error);

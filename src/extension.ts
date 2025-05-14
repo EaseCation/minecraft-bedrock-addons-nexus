@@ -42,6 +42,12 @@ export async function activate(context: vscode.ExtensionContext) {
 		await relatedFilesController.refreshCurrentFile();
 		// 同步索引到完整结构树
 		structureView.updateAddonStructure(fileIndexManager.getAddonStructure());
+
+		// 注册文件变更回调，自动刷新UI
+		fileIndexManager.fileWatcher.setOnIndexChanged(async () => {
+			await relatedFilesController.refreshCurrentFile();
+			structureView.updateAddonStructure(fileIndexManager.getAddonStructure());
+		});
 	} finally {
 		// 清除加载提示
 		loadingMessage.dispose();

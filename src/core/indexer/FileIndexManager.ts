@@ -4,8 +4,8 @@ import { FileIndexer } from './FileIndexer';
 import { FileWatcher } from '../watcher/FileWatcher';
 
 export class FileIndexManager {
+    public fileWatcher: FileWatcher;
     private fileIndexer: FileIndexer;
-    private fileWatcher: FileWatcher;
     private disposables: vscode.Disposable[] = [];
     private indexUpdateCallbacks: ((structure: AddonStructure) => void)[] = [];
 
