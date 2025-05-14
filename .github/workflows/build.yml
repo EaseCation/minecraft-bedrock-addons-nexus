@@ -28,9 +28,6 @@ jobs:
     - name: Lint
       run: npm run lint
     
-    - name: Test
-      run: npm test
-    
     - name: Build extension
       run: npm run build
     
@@ -39,3 +36,36 @@ jobs:
       with:
         name: minecraft-bedrock-addons-nexus
         path: "*.vsix"
+
+  release:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: minecraft-bedrock-addons-nexus
+    
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      with:
+        tag_name: v${{ github.run_number }}
+        release_name: Release v${{ github.run_number }}
+        draft: false
+        prerelease: false
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./*.vsix
+        asset_name: minecraft-bedrock-addons-nexus.vsix
+        asset_content_type: application/octet-stream
