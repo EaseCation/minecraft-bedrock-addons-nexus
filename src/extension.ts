@@ -60,6 +60,12 @@ export async function activate(context: vscode.ExtensionContext) {
 	});
 
 	context.subscriptions.push(disposable);
+
+	// 新增：注册切换仅展示最近的命令
+	let toggleRecentDisposable = vscode.commands.registerCommand('minecraft-bedrock-addons-nexus.toggleShowRecentOnly', () => {
+		structureView.toggleShowRecentOnly();
+	});
+	context.subscriptions.push(toggleRecentDisposable);
 }
 
 // This method is called when your extension is deactivated

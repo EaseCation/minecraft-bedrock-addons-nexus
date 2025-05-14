@@ -279,6 +279,12 @@ class BaseFileItem extends vscode.TreeItem {
                 arguments: [type]
             };
             this.iconPath = new vscode.ThemeIcon('add');
+        } else if (contextValue === 'toggleShowRecentOnly') {
+            this.command = {
+                command: 'minecraft-bedrock-addons-nexus.toggleShowRecentOnly',
+                title: '切换仅展示最近'
+            };
+            this.iconPath = new vscode.ThemeIcon('eye');
         }
     }
 }
@@ -291,11 +297,17 @@ export class StructureView implements vscode.TreeDataProvider<BaseFileItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<BaseFileItem | undefined | null | void> = new vscode.EventEmitter<BaseFileItem | undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<BaseFileItem | undefined | null | void> = this._onDidChangeTreeData.event;
     private _addonStructure: AddonStructure | null = null;
+    private _showRecentOnly: boolean = false;
 
     constructor() {}
 
     public updateAddonStructure(structure: AddonStructure) {
         this._addonStructure = structure;
+        this._onDidChangeTreeData.fire();
+    }
+
+    public toggleShowRecentOnly() {
+        this._showRecentOnly = !this._showRecentOnly;
         this._onDidChangeTreeData.fire();
     }
 
@@ -306,19 +318,30 @@ export class StructureView implements vscode.TreeDataProvider<BaseFileItem> {
     getChildren(element?: BaseFileItem): BaseFileItem[] {
         if (!this._addonStructure) return [];
         if (!element) {
-            // 根节点，显示所有类型分组
-            return this.getAllTypeGroups();
+            // 根节点，先加一个切换按钮
+            const toggleLabel = this._showRecentOnly ? '仅展示最近：开' : '仅展示最近：关';
+            const toggleItem = new BaseFileItem(
+                toggleLabel,
+                FileType.CLIENT_ENTITY, // 图标类型随意
+                vscode.TreeItemCollapsibleState.None,
+                undefined,
+                undefined,
+                'toggleShowRecentOnly'
+            );
+            return [toggleItem, ...this.getAllTypeGroups()];
         } else if (element.items) {
-            // 分组下的文件节点
-            return element.items
+            let items = element.items
                 .filter(item => item.file)
-                .sort((a, b) => (b.file!.updatedAt || 0) - (a.file!.updatedAt || 0))
-                .map(item => new BaseFileItem(
-                    item.identifier,
-                    element.type,
-                    vscode.TreeItemCollapsibleState.None,
-                    item.file
-                ));
+                .sort((a, b) => (b.file!.updatedAt || 0) - (a.file!.updatedAt || 0));
+            if (this._showRecentOnly) {
+                items = items.slice(0, 5);
+            }
+            return items.map(item => new BaseFileItem(
+                item.identifier,
+                element.type,
+                vscode.TreeItemCollapsibleState.None,
+                item.file
+            ));
         }
         return [];
     }
@@ -348,8 +371,9 @@ export class StructureView implements vscode.TreeDataProvider<BaseFileItem> {
     }
 
     private makeItems<T extends AddonFile>(dict: { [id: string]: T }): { identifier: string; file?: AddonFile }[] {
-        return Object.entries(dict)
+        const sorted = Object.entries(dict)
             .map(([identifier, file]) => ({ identifier, file }))
             .sort((a, b) => (b.file?.updatedAt || 0) - (a.file?.updatedAt || 0));
+        return this._showRecentOnly ? sorted.slice(0, 5) : sorted;
     }
 } 
