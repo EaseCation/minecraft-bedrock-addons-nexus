@@ -231,36 +231,47 @@ export class FileIndexer {
         // 处理所有包中的文件
         const allPacks = [...this.addonStructure.resourcePacks, ...this.addonStructure.behaviorPacks];
         for (const pack of allPacks) {
-            const patterns = [
-                '**/entity/**/*.json',
-                '**/entities/**/*.json',
-                '**/animations/**/*.json',
-                '**/models/**/*.json',
-                '**/textures/**/*.{png,tga}',
-                '**/particles/**/*.json',
-                '**/sounds/**/*.json',
-                '**/render_controllers/**/*.json'
-            ];
-
-            for (const pattern of patterns) {
-                const files = await vscode.workspace.findFiles(
-                    new vscode.RelativePattern(vscode.Uri.file(pack), pattern)
-                );
-
-                for (const file of files) {
-                    const fileType = await this.getFileType(file.fsPath);
-                    if (fileType) {
-                        console.log(`[DEBUG] 处理${fileType}文件: ${file.fsPath}`);
-                        const parsedFile = await this.parseFile(file.fsPath, fileType);
-                        if (parsedFile) {
-                            this.updateIndex(parsedFile);
-                        }
+            // 递归查找所有 .json 文件
+            const jsonFiles = await this.findAllJsonFiles(pack);
+            for (const filePath of jsonFiles) {
+                const fileType = await this.getFileType(filePath);
+                if (fileType) {
+                    console.log(`[DEBUG] 处理${fileType}文件: ${filePath}`);
+                    const parsedFile = await this.parseFile(filePath, fileType);
+                    if (parsedFile) {
+                        this.updateIndex(parsedFile);
                     }
                 }
             }
         }
 
         console.log('[DEBUG] 所有索引更新完成');
+    }
+
+    // 递归查找所有 .json 文件
+    private async findAllJsonFiles(rootDir: string): Promise<string[]> {
+        const jsonFiles: string[] = [];
+        const fs = require('fs').promises;
+        const pathModule = require('path');
+
+        async function walk(dir: string) {
+            let entries: any[];
+            try {
+                entries = await fs.readdir(dir, { withFileTypes: true });
+            } catch (e) {
+                return;
+            }
+            for (const entry of entries) {
+                const fullPath = pathModule.join(dir, entry.name);
+                if (entry.isDirectory()) {
+                    await walk(fullPath);
+                } else if (entry.isFile() && entry.name.endsWith('.json')) {
+                    jsonFiles.push(fullPath);
+                }
+            }
+        }
+        await walk(rootDir);
+        return jsonFiles;
     }
 
     public async indexWorkspace(workspaceFolders: readonly vscode.WorkspaceFolder[]): Promise<void> {
