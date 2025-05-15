@@ -9,7 +9,7 @@ import { parseTexture } from '../parser/TextureParser';
 import { parseParticle } from '../parser/ParticleParser';
 import { parseSound } from '../parser/SoundParser';
 import { parseRenderController } from '../parser/RenderControllerParser';
-import { parseClientBlock } from '../parser/ClientBlockParser';
+import { parseClientBlock, parseServerBlock } from '../parser/BlockParser';
 import { getFileTypeMeta } from '../types/FileTypeMeta';
 
 type ParserFunction = (path: string, content: any) => Promise<AddonFile | null>;
@@ -43,6 +43,8 @@ export class FileIndexer {
     public resourceUsedByMap: ResourceUsedByMap = {};
 
     private readonly parserMap: Map<FileType, ParserFunction> = new Map<FileType, ParserFunction>([
+        [FileType.CLIENT_BLOCK, parseClientBlock as ParserFunction],
+        [FileType.SERVER_BLOCK, parseServerBlock as ParserFunction],
         [FileType.SERVER_ENTITY, parseServerEntity as ParserFunction],
         [FileType.CLIENT_ENTITY, parseClientEntity as ParserFunction],
         [FileType.ANIMATION, parseAnimation as ParserFunction],
@@ -50,20 +52,7 @@ export class FileIndexer {
         [FileType.TEXTURE, parseTexture as ParserFunction],
         [FileType.PARTICLE, parseParticle as ParserFunction],
         [FileType.SOUND, parseSound as ParserFunction],
-        [FileType.RENDER_CONTROLLER, parseRenderController as ParserFunction],
-        [FileType.CLIENT_BLOCK, parseClientBlock as ParserFunction]
-    ]);
-
-    private readonly indexMap: Map<FileType, keyof AddonStructure['index']> = new Map([
-        [FileType.SERVER_ENTITY, 'serverEntity'],
-        [FileType.CLIENT_ENTITY, 'clientEntity'],
-        [FileType.ANIMATION, 'animation'],
-        [FileType.MODEL, 'model'],
-        [FileType.TEXTURE, 'texture'],
-        [FileType.PARTICLE, 'particle'],
-        [FileType.SOUND, 'sound'],
-        [FileType.RENDER_CONTROLLER, 'renderController'],
-        [FileType.CLIENT_BLOCK, 'clientBlock']
+        [FileType.RENDER_CONTROLLER, parseRenderController as ParserFunction]
     ]);
 
     constructor(onIndexUpdate: (structure: AddonStructure) => void) {
@@ -76,16 +65,23 @@ export class FileIndexer {
             resourcePacks: [],
             behaviorPacks: [],
             index: {
-                serverBlock: {},
-                clientBlock: {},
-                serverEntity: {},
-                clientEntity: {},
-                animation: {},
-                model: {},
-                texture: {},
-                particle: {},
-                sound: {},
-                renderController: {}
+                [FileType.MANIFEST]: {},
+                [FileType.SERVER_BLOCK]: {},
+                [FileType.CLIENT_BLOCK]: {},
+                [FileType.SERVER_ENTITY]: {},
+                [FileType.CLIENT_ENTITY]: {},
+                [FileType.ITEM]: {},
+                [FileType.UI]: {},
+                [FileType.ATTACHABLE]: {},
+                [FileType.ANIMATION]: {},
+                [FileType.ANIMATION_CONTROLLER]: {},
+                [FileType.MODEL]: {},
+                [FileType.TEXTURE]: {},
+                [FileType.PARTICLE]: {},
+                [FileType.SOUND]: {},
+                [FileType.RENDER_CONTROLLER]: {},
+                [FileType.FOG]: {},
+                [FileType.UNKNOWN]: {}
             }
         };
     }
@@ -116,36 +112,13 @@ export class FileIndexer {
     }
 
     private updateIndex(file: AddonFile): void {
-        const indexKey = this.indexMap.get(file.type);
-        if (!indexKey) {
-            return;
-        }
-        const identifiers: string[] = [];
-        if (file.type === FileType.SERVER_BLOCK) {
-            identifiers.push(...file.block);
-        } else if (file.type === FileType.CLIENT_BLOCK) {
-            identifiers.push(...file.blocks);
-        } else if (file.type === FileType.SERVER_ENTITY) {
-            identifiers.push(file.entity);
-        } else if (file.type === FileType.CLIENT_ENTITY) {
-            identifiers.push(file.entity);
-        } else if (file.type === FileType.ANIMATION) {
-            identifiers.push(...file.animations);
-        } else if (file.type === FileType.MODEL) {
-            identifiers.push(...file.geometries);
-        } else if (file.type === FileType.TEXTURE) {
-            identifiers.push(file.texture);
-        } else if (file.type === FileType.PARTICLE) {
-            identifiers.push(...file.particles);
-        } else if (file.type === FileType.SOUND) {
-            identifiers.push(...file.sounds);
-        } else if (file.type === FileType.RENDER_CONTROLLER) {
-            identifiers.push(...file.controllers);
-        }
+        const meta = getFileTypeMeta(file.type);
+        const identifiers: string[] = meta?.getIdentifiers?.(file) || [];
+        
         for (const identifier of identifiers) {
-            const arr = (this.addonStructure.index[indexKey] as IndexMap)[identifier];
+            const arr = (this.addonStructure.index[file.type] as IndexMap)[identifier];
             if (!arr) {
-                (this.addonStructure.index[indexKey] as IndexMap)[identifier] = [file];
+                (this.addonStructure.index[file.type] as IndexMap)[identifier] = [file];
             } else {
                 // 避免重复添加同一文件
                 if (!arr.some(f => f.path === file.path)) {
@@ -184,9 +157,7 @@ export class FileIndexer {
     }
 
     public removeFile(filePath: string, fileType: FileType): void {
-        const indexKey = this.indexMap.get(fileType);
-        if (!indexKey) return;
-        const index = this.addonStructure.index[indexKey];
+        const index = this.addonStructure.index[fileType];
         Object.entries(index).forEach(([id, arr]) => {
             if (Array.isArray(arr)) {
                 const newArr = arr.filter(f => f.path !== filePath);
@@ -332,7 +303,7 @@ export class FileIndexer {
         for (const type of Object.values(FileType)) {
             const meta = getFileTypeMeta(type);
             if (!meta?.findUsingOtherFiles) continue;
-            const indexDict = structure.index[meta.indexKey];
+            const indexDict = structure.index[type];
             for (const [identifier, files] of Object.entries(indexDict)) {
                 for (const file of files) {
                     // 正向：file 用了哪些资源（新结构，直接存）

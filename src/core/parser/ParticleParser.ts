@@ -3,31 +3,24 @@ import * as fs from 'fs';
 
 export async function parseParticle(path: string, content: any): Promise<AddonFileParticle | null> {
     try {
-        const particles: string[] = [];
-        const textures: string[] = [];
-
-        if (content.effect) {
-            particles.push(content.effect);
-        }
-
-        if (content.textures) {
-            if (typeof content.textures === 'string') {
-                textures.push(content.textures);
-            } else if (Array.isArray(content.textures)) {
-                textures.push(...content.textures);
-            }
-        }
-
-        if (particles.length === 0) {
+        if (!content['particle_effect'] && !content['particle_effect']['description']) {
             return null;
+        }
+
+        const description = content['particle_effect']['description'];
+
+        const identifier = description['identifier'];
+        let texture = undefined;
+        if (description['basic_render_parameters']) {
+            texture = description['basic_render_parameters']['texture'];
         }
 
         const stat = await fs.promises.stat(path);
         return {
             path,
             type: FileType.PARTICLE,
-            particles,
-            textures,
+            particle: identifier,
+            texture,
             updatedAt: stat.mtimeMs
         };
     } catch (error) {

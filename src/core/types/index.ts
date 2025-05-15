@@ -18,7 +18,7 @@ export enum FileType {
     UNKNOWN = 'unknown'
 }
 
-export type AddonFile = AddonFileServerBlock | AddonFileClientBlock | AddonFileServerEntity | AddonFileClientEntity | AddonFileAnimation | AddonFileModel | AddonFileTexture | AddonFileParticle | AddonFileSound | AddonFileRenderController;
+export type AddonFile = AddonFileServerBlock | AddonFileClientBlock | AddonFileServerEntity | AddonFileClientEntity | AddonFileItem | AddonFileUI | AddonFileAttachable | AddonFileAnimation | AddonFileAnimationController | AddonFileModel | AddonFileTexture | AddonFileParticle | AddonFileSound | AddonFileRenderController | AddonFileFog;
 
 export interface AddonFileBase {
     path: string;
@@ -52,9 +52,29 @@ export interface AddonFileClientEntity extends AddonFileBase {
     renderControllers: string[];
 }
 
+export interface AddonFileItem extends AddonFileBase {
+    type: FileType.ITEM;
+    item: string;
+}
+
+export interface AddonFileUI extends AddonFileBase {
+    type: FileType.UI;
+    ui: string;
+}
+
+export interface AddonFileAttachable extends AddonFileBase {
+    type: FileType.ATTACHABLE;
+    attachable: string;
+}
+
 export interface AddonFileAnimation extends AddonFileBase {
     type: FileType.ANIMATION;
     animations: string[];
+}
+
+export interface AddonFileAnimationController extends AddonFileBase {
+    type: FileType.ANIMATION_CONTROLLER;
+    controllers: string[];
 }
 
 export interface AddonFileModel extends AddonFileBase {
@@ -69,8 +89,8 @@ export interface AddonFileTexture extends AddonFileBase {
 
 export interface AddonFileParticle extends AddonFileBase {
     type: FileType.PARTICLE;
-    particles: string[];
-    textures: string[];
+    particle: string;
+    texture: string;
 }
 
 export interface AddonFileSound extends AddonFileBase {
@@ -86,39 +106,65 @@ export interface AddonFileRenderController extends AddonFileBase {
     materials: string[];
 }
 
+export interface AddonFileFog extends AddonFileBase {
+    type: FileType.FOG;
+    fog: string[];
+}
+
 export interface AddonStructure {
     resourcePacks: string[];
     behaviorPacks: string[];
     index: {
-        serverBlock: {
+        [FileType.MANIFEST]: {
+            [manifestIdentifier: string]: AddonFile[];
+        };
+        [FileType.SERVER_BLOCK]: {
             [blockIdentifier: string]: AddonFileServerBlock[];
         };
-        clientBlock: {
+        [FileType.CLIENT_BLOCK]: {
             [blockIdentifier: string]: AddonFileClientBlock[];
         };
-        serverEntity: {
+        [FileType.SERVER_ENTITY]: {
             [entityIdentifier: string]: AddonFileServerEntity[];
         };
-        clientEntity: {
+        [FileType.CLIENT_ENTITY]: {
             [entityIdentifier: string]: AddonFileClientEntity[];
         };
-        animation: {
+        [FileType.ITEM]: {
+            [itemIdentifier: string]: AddonFileItem[];
+        };
+        [FileType.UI]: {
+            [uiIdentifier: string]: AddonFileUI[];
+        };
+        [FileType.ATTACHABLE]: {
+            [attachableIdentifier: string]: AddonFileAttachable[];
+        };
+        [FileType.ANIMATION]: {
             [animationIdentifier: string]: AddonFileAnimation[];
         };
-        model: {
+        [FileType.ANIMATION_CONTROLLER]: {
+            [animationControllerIdentifier: string]: AddonFileAnimationController[];
+        };
+        [FileType.MODEL]: {
             [modelIdentifier: string]: AddonFileModel[];
         };
-        texture: {
+        [FileType.TEXTURE]: {
             [textureIdentifier: string]: AddonFileTexture[];
         };
-        particle: {
+        [FileType.PARTICLE]: {
             [particleIdentifier: string]: AddonFileParticle[];
         };
-        sound: {
+        [FileType.SOUND]: {
             [soundIdentifier: string]: AddonFileSound[];
         };
-        renderController: {
+        [FileType.RENDER_CONTROLLER]: {
             [controllerIdentifier: string]: AddonFileRenderController[];
+        };
+        [FileType.FOG]: {
+            [fogIdentifier: string]: AddonFileFog[];
+        };
+        [FileType.UNKNOWN]: {
+            [unknownIdentifier: string]: AddonFile[];
         };
     }
 }

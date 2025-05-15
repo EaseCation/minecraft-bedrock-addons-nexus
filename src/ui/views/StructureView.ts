@@ -51,7 +51,9 @@ export class StructureView implements vscode.TreeDataProvider<BaseFileItem> {
                 item.identifier,
                 element.type,
                 vscode.TreeItemCollapsibleState.None,
-                item.file
+                item.file,
+                undefined,
+                "item"
             ));
         }
         return [];
@@ -65,7 +67,7 @@ export class StructureView implements vscode.TreeDataProvider<BaseFileItem> {
             meta.type,
             vscode.TreeItemCollapsibleState.Expanded,
             undefined,
-            this.makeItems(index[meta.indexKey])
+            this.makeItems(index[meta.type])
         ));
     }
 

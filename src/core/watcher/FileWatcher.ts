@@ -58,8 +58,12 @@ export class FileWatcher {
 
     private async handleFileChange(filePath: string, changeType: 'create' | 'change' | 'delete'): Promise<void> {
         try {
-            // 跳过.git目录下的文件
-            if (filePath.includes(`${path.sep}.git${path.sep}`) || filePath.includes(`${path.sep}.git${path.posix.sep}`) || filePath.endsWith(`${path.sep}.git`) || filePath.endsWith(`${path.posix.sep}.git`)) {
+            // 跳过.git目录下的文件和以.git结尾的文件
+            if (filePath.includes(`${path.sep}.git${path.sep}`) || 
+                filePath.includes(`${path.sep}.git${path.posix.sep}`) || 
+                filePath.endsWith(`${path.sep}.git`) || 
+                filePath.endsWith(`${path.posix.sep}.git`) ||
+                filePath.endsWith('.git')) {
                 return;
             }
             const fileType = await this.fileIndexer.getFileType(filePath);

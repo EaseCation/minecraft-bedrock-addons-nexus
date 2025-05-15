@@ -6,7 +6,6 @@ export interface FileTypeMeta {
     type: FileType;
     label: string;
     icon: vscode.ThemeIcon;
-    indexKey: keyof AddonStructure['index'];
     getIdentifiers?: (file: AddonFile) => string[] | null;
     // 查找 该资源 -使用-> [其他资源]
     findUsingOtherFiles?: (
@@ -20,12 +19,11 @@ export const FILE_TYPE_META_LIST: FileTypeMeta[] = [
         type: FileType.SERVER_BLOCK,
         label: '服务端方块',
         icon: new vscode.ThemeIcon('package'),
-        indexKey: 'serverBlock',
         getIdentifiers: (file) => (file as AddonFileServerBlock).block ? [(file as AddonFileServerBlock).block] : null,
         findUsingOtherFiles: (structure, addonFile) => {
             const result: { [type in FileType]?: { [key: string]: AddonFile[] } } = {};
             const id = (addonFile as AddonFileServerBlock).block;
-            for (const [clientBlockId, files] of Object.entries(structure.index.clientBlock)) {
+            for (const [clientBlockId, files] of Object.entries(structure.index.client_block)) {
                 if (!result[FileType.CLIENT_BLOCK]) {
                     result[FileType.CLIENT_BLOCK] = {};
                 }
@@ -45,13 +43,12 @@ export const FILE_TYPE_META_LIST: FileTypeMeta[] = [
         type: FileType.CLIENT_BLOCK,
         label: '客户端方块',
         icon: new vscode.ThemeIcon('archive'),
-        indexKey: 'clientBlock',
         getIdentifiers: (file) => (file as AddonFileClientBlock).blocks ?? null,
         findUsingOtherFiles: (structure, addonFile) => {
             const result: { [type in FileType]?: { [key: string]: AddonFile[] } } = {};
             const ids = (addonFile as AddonFileClientBlock).blocks;
             for (const id of ids) {
-                for (const [serverBlockId, files] of Object.entries(structure.index.serverBlock)) {
+                for (const [serverBlockId, files] of Object.entries(structure.index.server_block)) {
                     if (!result[FileType.SERVER_BLOCK]) {
                         result[FileType.SERVER_BLOCK] = {};
                     }
@@ -72,14 +69,12 @@ export const FILE_TYPE_META_LIST: FileTypeMeta[] = [
         type: FileType.SERVER_ENTITY,
         label: '服务端实体',
         icon: new vscode.ThemeIcon('symbol-namespace'),
-        indexKey: 'serverEntity',
         getIdentifiers: (file) => (file as AddonFileServerEntity).entity ? [(file as AddonFileServerEntity).entity] : null,
     },
     {
         type: FileType.CLIENT_ENTITY,
         label: '客户端实体',
         icon: new vscode.ThemeIcon('symbol-object'),
-        indexKey: 'clientEntity',
         getIdentifiers: (file) => (file as AddonFileClientEntity).entity ? [(file as AddonFileClientEntity).entity] : null,
         findUsingOtherFiles: (structure, addonFile) => {
             const result: { [type in FileType]?: { [key: string]: AddonFile[] } } = {};
@@ -139,8 +134,8 @@ export const FILE_TYPE_META_LIST: FileTypeMeta[] = [
                 for (const rcid of entity.renderControllers) {
                     if (!result[FileType.RENDER_CONTROLLER]) result[FileType.RENDER_CONTROLLER] = {};
                     if (!result[FileType.RENDER_CONTROLLER]![rcid]) result[FileType.RENDER_CONTROLLER]![rcid] = [];
-                    if (structure.index.renderController[rcid]) {
-                        result[FileType.RENDER_CONTROLLER]![rcid].push(...structure.index.renderController[rcid]);
+                    if (structure.index.render_controller[rcid]) {
+                        result[FileType.RENDER_CONTROLLER]![rcid].push(...structure.index.render_controller[rcid]);
                     }
                 }
             }
@@ -151,7 +146,6 @@ export const FILE_TYPE_META_LIST: FileTypeMeta[] = [
         type: FileType.ANIMATION,
         label: '动画',
         icon: new vscode.ThemeIcon('symbol-event'),
-        indexKey: 'animation',
         getIdentifiers: (file) => (file as AddonFileAnimation).animations ?? null,
         findUsingOtherFiles: () => ({}),
     },
@@ -159,7 +153,6 @@ export const FILE_TYPE_META_LIST: FileTypeMeta[] = [
         type: FileType.MODEL,
         label: '模型',
         icon: new vscode.ThemeIcon('symbol-structure'),
-        indexKey: 'model',
         getIdentifiers: (file) => (file as AddonFileModel).geometries ?? null,
         findUsingOtherFiles: () => ({}),
     },
@@ -167,23 +160,31 @@ export const FILE_TYPE_META_LIST: FileTypeMeta[] = [
         type: FileType.TEXTURE,
         label: '材质',
         icon: new vscode.ThemeIcon('symbol-color'),
-        indexKey: 'texture',
-        getIdentifiers: (file) => [path.basename((file as AddonFileTexture).path, path.extname((file as AddonFileTexture).path))],
+        getIdentifiers: (file) => (file as AddonFileTexture).texture ? [(file as AddonFileTexture).texture] : null,
         findUsingOtherFiles: () => ({}),
     },
     {
         type: FileType.PARTICLE,
         label: '粒子',
         icon: new vscode.ThemeIcon('flame'),
-        indexKey: 'particle',
-        getIdentifiers: (file) => (file as AddonFileParticle).particles ?? null,
-        findUsingOtherFiles: () => ({}),
+        getIdentifiers: (file) => (file as AddonFileParticle).particle ? [(file as AddonFileParticle).particle] : null,
+        findUsingOtherFiles: (structure, addonFile) => {
+            const result: { [type in FileType]?: { [key: string]: AddonFile[] } } = {};
+            const particle = addonFile as AddonFileParticle;
+            if (particle.texture) {
+                if (!result[FileType.TEXTURE]) result[FileType.TEXTURE] = {};
+                if (!result[FileType.TEXTURE]![particle.texture]) result[FileType.TEXTURE]![particle.texture] = [];
+                if (structure.index.texture[particle.texture]) {
+                    result[FileType.TEXTURE]![particle.texture].push(...structure.index.texture[particle.texture]);
+                }
+            }
+            return result;
+        },
     },
     {
         type: FileType.SOUND,
         label: '音效',
         icon: new vscode.ThemeIcon('unmute'),
-        indexKey: 'sound',
         getIdentifiers: (file) => (file as AddonFileSound).sounds ?? null,
         findUsingOtherFiles: () => ({}),
     },
@@ -191,7 +192,6 @@ export const FILE_TYPE_META_LIST: FileTypeMeta[] = [
         type: FileType.RENDER_CONTROLLER,
         label: '渲染控制器',
         icon: new vscode.ThemeIcon('settings-gear'),
-        indexKey: 'renderController',
         getIdentifiers: (file) => (file as AddonFileRenderController).controllers ?? null,
         findUsingOtherFiles: () => ({}),
     },

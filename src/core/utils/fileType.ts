@@ -10,7 +10,7 @@ export async function determineFileType(filePath: string): Promise<FileType> {
         return FileType.SERVER_BLOCK;
     }
     if (path.basename(filePath) === 'blocks.json') {
-        return FileType.SERVER_BLOCK;
+        return FileType.CLIENT_BLOCK;
     }
     if ((filePath.includes('items/') || filePath.includes('netease_items/')) && filePath.endsWith('.json')) {
         return FileType.ITEM;

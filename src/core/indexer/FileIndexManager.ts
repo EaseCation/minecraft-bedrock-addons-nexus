@@ -77,46 +77,17 @@ export class FileIndexManager {
         }
 
         const structure = this.getAddonStructure();
-        const indexKey = this.getIndexKey(fileType);
-        if (!indexKey) {
-            return null;
-        }
 
         // 适配数组结构，查找所有数组中path匹配的文件
-        for (const arr of Object.values(structure.index[indexKey])) {
+        for (const arr of Object.values(structure.index[fileType])) {
             if (Array.isArray(arr)) {
                 const found = arr.find((f: AddonFile) => f.path === filePath);
-                if (found) return found;
+                if (found) {
+                    return found;
+                }
             }
         }
         return null;
-    }
-
-    private getIndexKey(fileType: FileType): keyof AddonStructure['index'] | null {
-        switch (fileType) {
-            case FileType.SERVER_BLOCK:
-                return 'serverBlock';
-            case FileType.CLIENT_BLOCK:
-                return 'clientBlock';
-            case FileType.SERVER_ENTITY:
-                return 'serverEntity';
-            case FileType.CLIENT_ENTITY:
-                return 'clientEntity';
-            case FileType.ANIMATION:
-                return 'animation';
-            case FileType.MODEL:
-                return 'model';
-            case FileType.TEXTURE:
-                return 'texture';
-            case FileType.PARTICLE:
-                return 'particle';
-            case FileType.SOUND:
-                return 'sound';
-            case FileType.RENDER_CONTROLLER:
-                return 'renderController';
-            default:
-                return null;
-        }
     }
 
     public onIndexUpdate(callback: (structure: AddonStructure) => void): void {

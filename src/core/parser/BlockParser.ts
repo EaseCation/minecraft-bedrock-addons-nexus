@@ -1,4 +1,4 @@
-import { AddonFile, AddonFileClientBlock, FileType } from '../types';
+import { AddonFile, AddonFileClientBlock, AddonFileServerBlock, FileType } from '../types';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -19,16 +19,14 @@ export async function parseClientBlock(filePath: string, content: any): Promise<
             return null;
         }
 
-        // 检查是否在 resource_pack 目录下
-        if (!filePath.includes('resource_pack')) {
-            return null;
-        }
-
         const blocksData = content as BlocksJson;
         const blocks: string[] = [];
 
         // 遍历所有方块定义
         for (const [blockIdentifier, blockDef] of Object.entries(blocksData)) {
+            if (blockIdentifier === 'format_version') {
+                continue;
+            }
             blocks.push(blockIdentifier);
         }
 
@@ -47,4 +45,24 @@ export async function parseClientBlock(filePath: string, content: any): Promise<
         console.error(`Error parsing client block file ${filePath}:`, error);
         return null;
     }
-} 
+}
+
+export async function parseServerBlock(filePath: string, content: any): Promise<AddonFileServerBlock | null> {
+    try {
+        if (!content["minecraft:block"] || !content["minecraft:block"]["description"]) {
+            return null;
+        }
+        const blockDescription = content["minecraft:block"]["description"];
+        const identifier = blockDescription["identifier"];
+        const stat = await fs.promises.stat(filePath);
+        return {
+            type: FileType.SERVER_BLOCK,
+            path: filePath,
+            block: identifier,
+            updatedAt: stat.mtimeMs
+        };
+    } catch (error) {
+        console.error(`Error parsing server block file ${filePath}:`, error);
+        return null;
+    }
+}

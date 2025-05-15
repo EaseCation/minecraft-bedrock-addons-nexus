@@ -73,6 +73,22 @@ export async function activate(context: vscode.ExtensionContext) {
 		structureView.toggleShowRecentOnly();
 	});
 	context.subscriptions.push(toggleRecentDisposable);
+
+	// 新增：注册复制标识符命令
+	let copyIdentifierDisposable = vscode.commands.registerCommand('minecraft-bedrock-addons-nexus.copyIdentifier', (args) => {
+		if (args.label) {
+			vscode.env.clipboard.writeText(args.label);
+		}
+	});
+	context.subscriptions.push(copyIdentifierDisposable);
+
+	// 新增：注册添加文件命令
+	let addFileDisposable = vscode.commands.registerCommand('minecraft-bedrock-addons-nexus.addFile', () => {
+		// TODO relatedFilesController.addFile();
+		vscode.window.showInformationMessage('这个功能还没做呢');
+	});
+	context.subscriptions.push(addFileDisposable);
+	
 }
 
 // This method is called when your extension is deactivated

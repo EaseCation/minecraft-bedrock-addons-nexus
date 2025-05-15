@@ -35,31 +35,6 @@ export class RelatedFilesController {
         this._view.updateCurrentFile(file);
     }
 
-    private getIndexKey(fileType: FileType): keyof AddonStructure['index'] | null {
-        switch (fileType) {
-            case FileType.SERVER_BLOCK:
-                return 'serverBlock';
-            case FileType.CLIENT_BLOCK:
-                return 'clientBlock';
-            case FileType.SERVER_ENTITY:
-                return 'serverEntity';
-            case FileType.CLIENT_ENTITY:
-                return 'clientEntity';
-            case FileType.ANIMATION:
-                return 'animation';
-            case FileType.MODEL:
-                return 'model';
-            case FileType.TEXTURE:
-                return 'texture';
-            case FileType.PARTICLE:
-                return 'particle';
-            case FileType.SOUND:
-                return 'sound';
-            default:
-                return null;
-        }
-    }
-
     public dispose() {
         this._disposables.forEach(d => d.dispose());
     }

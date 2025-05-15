@@ -3,22 +3,14 @@ import * as fs from 'fs';
 
 export async function parseSound(path: string, content: any): Promise<AddonFileSound | null> {
     try {
-        const sounds: string[] = [];
-
-        if (content.sounds) {
-            if (typeof content.sounds === 'string') {
-                sounds.push(content.sounds);
-            } else if (Array.isArray(content.sounds)) {
-                content.sounds.forEach((sound: any) => {
-                    if (typeof sound === 'string') {
-                        sounds.push(sound);
-                    } else if (sound.name) {
-                        sounds.push(sound.name);
-                    }
-                });
-            }
+        let originalContent: {[key: string]: any};
+        if (content['format_version'] && content['sound_definitions']) {
+            originalContent = content['sound_definitions'];
+        } else {
+            originalContent = content;
         }
-
+        const sounds: string[] = Object.keys(originalContent);
+        
         if (sounds.length === 0) {
             return null;
         }

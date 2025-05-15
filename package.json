@@ -28,6 +28,11 @@
         "command": "minecraft-bedrock-addons-nexus.addFile",
         "title": "添加",
         "icon": "$(add)"
+      },
+      {
+        "command": "minecraft-bedrock-addons-nexus.copyIdentifier",
+        "title": "复制",
+        "icon": "$(copy)"
       }
     ],
     "viewsContainers": {
@@ -56,6 +61,11 @@
         {
           "command": "minecraft-bedrock-addons-nexus.addFile",
           "when": "view == relatedFilesView && viewItem == group",
+          "group": "inline"
+        },
+        {
+          "command": "minecraft-bedrock-addons-nexus.copyIdentifier",
+          "when": "view == structureView && viewItem == item",
           "group": "inline"
         }
       ]
