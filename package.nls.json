@@ -1,0 +1,13 @@
+{
+    "extension.title": "Minecraft Bedrock Addons Nexus",
+    "extension.description": "A VSCode extension for managing Minecraft Bedrock Addons files. Provides a sidebar interface that displays all related files in real-time.",
+    "command.refreshIndex.title": "Refresh Bedrock Addons Index",
+    "command.toggleRecent.title": "Toggle Recent Only",
+    "command.add.title": "Add",
+    "command.copy.title": "Copy",
+    "view.relatedFiles.name": "Related Files",
+    "view.fullStructure.name": "Full Project Structure",
+    "status.initializing": "Initializing file index...",
+    "status.activated": "Minecraft Bedrock Addons Nexus is now active",
+    "status.refreshing": "Refreshing file index..."
+} 

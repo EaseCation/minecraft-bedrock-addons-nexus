@@ -1,9 +1,9 @@
 {
   "name": "minecraft-bedrock-addons-nexus",
-  "displayName": "Minecraft Bedrock Addons Nexus",
-  "description": "A VSCode extension for managing Minecraft Bedrock Addons files and their relationships",
+  "displayName": "%extension.title%",
+  "description": "%extension.description%",
   "version": "0.0.1",
-  "publisher": "EaseCation",
+  "publisher": "easecation",
   "repository": {
     "type": "git",
     "url": "https://github.com/EaseCation/minecraft-bedrock-addons-nexus.git"
@@ -30,20 +30,20 @@
     "commands": [
       {
         "command": "minecraft-bedrock-addons-nexus.refresh",
-        "title": "刷新基岩版Addons索引"
+        "title": "%command.refreshIndex.title%"
       },
       {
         "command": "minecraft-bedrock-addons-nexus.toggleShowRecentOnly",
-        "title": "切换仅展示最近"
+        "title": "%command.toggleRecent.title%"
       },
       {
         "command": "minecraft-bedrock-addons-nexus.addFile",
-        "title": "添加",
+        "title": "%command.add.title%",
         "icon": "$(add)"
       },
       {
         "command": "minecraft-bedrock-addons-nexus.copyIdentifier",
-        "title": "复制",
+        "title": "%command.copy.title%",
         "icon": "$(copy)"
       }
     ],
@@ -51,7 +51,7 @@
       "activitybar": [
         {
           "id": "minecraft-bedrock-addons-nexus",
-          "title": "Minecraft Bedrock Addons Nexus",
+          "title": "%extension.title%",
           "icon": "resources/icon.svg"
         }
       ]
@@ -60,11 +60,11 @@
       "minecraft-bedrock-addons-nexus": [
         {
           "id": "relatedFilesView",
-          "name": "此文件关联"
+          "name": "%view.relatedFiles.name%"
         },
         {
           "id": "structureView",
-          "name": "项目完整结构"
+          "name": "%view.fullStructure.name%"
         }
       ]
     },

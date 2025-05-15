@@ -1,0 +1,12 @@
+{
+    "extension.title": "Minecraft Bedrock Addons Nexus",
+    "extension.description": "一个用于管理 Minecraft Bedrock Addons 文件的 VSCode 插件。该插件提供了一个侧边栏界面，实时展示当前打开文件的所有相关文件。",
+    "command.refreshIndex.title": "刷新基岩版Addons索引",
+    "command.toggleRecent.title": "切换仅展示最近",
+    "command.add.title": "添加",
+    "command.copy.title": "复制",
+    "view.relatedFiles.name": "此文件关联",
+    "view.fullStructure.name": "项目完整结构",
+    "status.initializing": "正在初始化文件索引...",
+    "status.activated": "Minecraft Bedrock Addons Nexus 已激活"
+} 

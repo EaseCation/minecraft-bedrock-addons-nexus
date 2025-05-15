@@ -9,7 +9,7 @@ import { RelatedFilesController } from './ui/controller/RelatedFilesController';
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export async function activate(context: vscode.ExtensionContext) {
-	console.log('Minecraft Bedrock Addons Nexus 已激活');
+	console.log(vscode.l10n.t('status.activated'));
 
 	// 创建文件索引管理器
 	const fileIndexManager = new FileIndexManager();
@@ -33,7 +33,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(relatedFilesController);
 
 	// 显示加载提示
-	const loadingMessage = vscode.window.setStatusBarMessage('正在初始化文件索引...');
+	const loadingMessage = vscode.window.setStatusBarMessage(vscode.l10n.t('status.initializing'));
 
 	try {
 		// 初始化工作区
@@ -56,7 +56,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// 注册命令
 	let disposable = vscode.commands.registerCommand('minecraft-bedrock-addons-nexus.refresh', async () => {
-		const loadingMessage = vscode.window.setStatusBarMessage('正在刷新文件索引...');
+		const loadingMessage = vscode.window.setStatusBarMessage(vscode.l10n.t('status.refreshing'));
 		try {
 			await fileIndexManager.initialize();
 			await relatedFilesController.refreshCurrentFile();
@@ -65,7 +65,6 @@ export async function activate(context: vscode.ExtensionContext) {
 			loadingMessage.dispose();
 		}
 	});
-
 	context.subscriptions.push(disposable);
 
 	// 新增：注册切换仅展示最近的命令
