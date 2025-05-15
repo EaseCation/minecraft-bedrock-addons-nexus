@@ -45,7 +45,7 @@
 
 1. 克隆仓库
 ```bash
-git clone https://github.com/yourusername/minecraft-bedrock-addons-nexus.git
+git clone https://github.com/EaseCation/minecraft-bedrock-addons-nexus.git
 ```
 
 2. 安装依赖

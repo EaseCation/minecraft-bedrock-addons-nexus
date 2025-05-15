@@ -3,6 +3,18 @@
   "displayName": "Minecraft Bedrock Addons Nexus",
   "description": "A VSCode extension for managing Minecraft Bedrock Addons files and their relationships",
   "version": "0.0.1",
+  "publisher": "EaseCation",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/EaseCation/minecraft-bedrock-addons-nexus.git"
+  },
+  "license": "MIT",
+  "keywords": [
+    "minecraft",
+    "bedrock",
+    "addons",
+    "vscode-extension"
+  ],
   "engines": {
     "vscode": "^1.85.0",
     "node": ">=20.0.0"
