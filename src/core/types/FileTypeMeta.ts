@@ -1,4 +1,4 @@
-import { FileType, AddonStructure, AddonFile, AddonFileClientEntity, AddonFileServerBlock, AddonFileClientBlock, AddonFileServerEntity, AddonFileModel, AddonFileAnimation, AddonFileTexture, AddonFileParticle, AddonFileSound, AddonFileRenderController } from '.';
+import { FileType, AddonStructure, AddonFile, AddonFileClientEntity, AddonFileServerBlock, AddonFileClientBlock, AddonFileServerEntity, AddonFileModel, AddonFileAnimation, AddonFileTexture, AddonFileParticle, AddonFileSound, AddonFileRenderController, AddonFileItem, AddonFileUI, AddonFileAttachable, AddonFileAnimationController } from '.';
 import * as vscode from 'vscode';
 import * as path from 'path';
 
@@ -143,10 +143,38 @@ export const FILE_TYPE_META_LIST: FileTypeMeta[] = [
         }
     },
     {
+        type: FileType.ITEM,
+        label: '物品',
+        icon: new vscode.ThemeIcon('package'),
+        getIdentifiers: (file) => (file as AddonFileItem).item ? [(file as AddonFileItem).item] : null,
+        findUsingOtherFiles: () => ({}),
+    },
+    {
+        type: FileType.UI,
+        label: 'UI',
+        icon: new vscode.ThemeIcon('window'),
+        getIdentifiers: (file) => (file as AddonFileUI).ui ? [(file as AddonFileUI).ui] : null,
+        findUsingOtherFiles: () => ({}),
+    },
+    {
+        type: FileType.ATTACHABLE,
+        label: '附加物',
+        icon: new vscode.ThemeIcon('symbol-property'),
+        getIdentifiers: (file) => (file as AddonFileAttachable).attachable ? [(file as AddonFileAttachable).attachable] : null,
+        findUsingOtherFiles: () => ({}),
+    },
+    {
         type: FileType.ANIMATION,
         label: '动画',
         icon: new vscode.ThemeIcon('symbol-event'),
         getIdentifiers: (file) => (file as AddonFileAnimation).animations ?? null,
+        findUsingOtherFiles: () => ({}),
+    },
+    {
+        type: FileType.ANIMATION_CONTROLLER,
+        label: '动画控制器',
+        icon: new vscode.ThemeIcon('symbol-event'),
+        getIdentifiers: (file) => (file as AddonFileAnimationController).controllers ?? null,
         findUsingOtherFiles: () => ({}),
     },
     {
@@ -158,7 +186,7 @@ export const FILE_TYPE_META_LIST: FileTypeMeta[] = [
     },
     {
         type: FileType.TEXTURE,
-        label: '材质',
+        label: '纹理',
         icon: new vscode.ThemeIcon('symbol-color'),
         getIdentifiers: (file) => (file as AddonFileTexture).texture ? [(file as AddonFileTexture).texture] : null,
         findUsingOtherFiles: () => ({}),

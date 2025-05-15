@@ -11,6 +11,10 @@ import { parseSound } from '../parser/SoundParser';
 import { parseRenderController } from '../parser/RenderControllerParser';
 import { parseClientBlock, parseServerBlock } from '../parser/BlockParser';
 import { getFileTypeMeta } from '../types/FileTypeMeta';
+import { parseItem } from '../parser/ItemParser';
+import { parseUI } from '../parser/UIParser';
+import { parseAttachable } from '../parser/AttachableParser';
+import { parseAnimationController } from '../parser/AnimationControllerParser';
 
 type ParserFunction = (path: string, content: any) => Promise<AddonFile | null>;
 type IndexMap = { [key: string]: AddonFile[] };
@@ -52,7 +56,11 @@ export class FileIndexer {
         [FileType.TEXTURE, parseTexture as ParserFunction],
         [FileType.PARTICLE, parseParticle as ParserFunction],
         [FileType.SOUND, parseSound as ParserFunction],
-        [FileType.RENDER_CONTROLLER, parseRenderController as ParserFunction]
+        [FileType.RENDER_CONTROLLER, parseRenderController as ParserFunction],
+        [FileType.ITEM, parseItem as ParserFunction],
+        [FileType.UI, parseUI as ParserFunction],
+        [FileType.ATTACHABLE, parseAttachable as ParserFunction],
+        [FileType.ANIMATION_CONTROLLER, parseAnimationController as ParserFunction]
     ]);
 
     constructor(onIndexUpdate: (structure: AddonStructure) => void) {
